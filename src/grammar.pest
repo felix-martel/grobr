@@ -1,0 +1,59 @@
+// A declaration is either a single anonymous pattern or a sequence of named patterns
+declaration = {SOI ~ (named_patterns | anonymous_pattern) ~ EOI}
+named_patterns = { named_pattern ~ ( ";" ~ (" "*) ~ named_pattern)* ~ (";")?}
+named_pattern = { identifier ~ "=" ~ pattern}
+anonymous_pattern = { pattern }
+
+// A pattern is any slash-separated sequence of path segments
+pattern = { path_segment ~ ("/" ~ path_segment)* }
+
+// A path segment can be either a double wildcard ** or an actual segment
+path_segment = {
+	double_wildcard
+    | element
+}
+double_wildcard = { "**" }
+
+element = { part+ }
+part = {
+	literal
+	| wildcard
+	| option_group
+	| placeholder
+}
+
+// Wildcard matches any character except /
+wildcard = { "*" }
+
+// Option groups are a list of alternatives separated by a |
+option_group = { "(" ~ literal ~ ("|" ~ literal)* ~ ")" }
+
+// Placeholders are named capturing groups with optional flags
+placeholder = { "{" ~ identifier ~ ( ":" ~ flags)? ~ "}"}
+identifier = { ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+flags = { flag+ }
+flag = _{
+    greedy_flag
+    | digit_flag
+    | alpha_flag
+    | range_length
+    | exact_length
+    | min_length
+    | max_length
+}
+greedy_flag = { "g" }
+digit_flag = { "d" }
+alpha_flag = { "a" }
+exact_length = @{ ASCII_DIGIT+ }
+min_length = @{ ">" ~ ASCII_DIGIT+ }
+max_length = @{ "<" ~ ASCII_DIGIT+ }
+range_length = @{ ASCII_DIGIT+ ~ "-" ~ ASCII_DIGIT+ }
+
+// Basic building blocks
+literal = @{ char+ }
+char = @{
+    escaped_char |
+    !(special_char) ~ ANY
+}
+escaped_char = @{ "\\" ~ special_char }
+special_char = @{ "{" | "*" | "(" | ")" | "}" | "\\" | "|" | "/" | ";" | "="}
